@@ -1,0 +1,78 @@
+﻿
+try -- Comment out for LOCAL TESTING ONLY
+
+	(* START TEST CASES, All B2 tests ASSUME your application is in a clean state. *)
+	
+	# BEGIN Test Case Block  -- One Per Test Case -- write no comments AFTER the next 3 globals. We scrape those lines.
+	Set global TestCaseID to "C4124393"
+	Set global TestCaseName to "Moxtra - Entitlements - WhiteList"
+	BeginTestCase global TestCaseID
+	
+	-- SETUP
+	HUpdateConsole "gbapi.mfa.site_to_user_enabled","false"
+	HUpdateConsole "mbank.realtimechat.feature.enabled","true"
+	HUpdateConsole "mbank.realtimechat.call.button.enabled","true"
+	HUpdateConsole "mbank.realtimechat.chat.button.enabled","true"
+	//Properties needed to stablish a conexion with Moxtra 
+	HUpdateConsole "mbank.realtimechat.api.url","https://bal.fismobile.com/rest/api/4-6-x-realtimechat-ci/v1"
+	HUpdateConsole "mbank.realtimechat.fi.orgId","PD8JDr2adJaAyjg6Q7Hipw2"
+	HUpdateConsole "mbank.realtimechat.fi.clientId","hFmorWPtQnY"
+	HUpdateConsole "mbank.realtimechat.fi.clientSecret","n6joV4HlVLQ"
+	// Setting entitlements
+	HUpdateConsole "fi.com.fismobile.realtimechat_entitlement","white-listing"
+	HUpdateConsole.publish
+	// To upload a groovy file
+	HUploadGroovy "realtime_Entitlements_Full"
+	
+	HUninstallInstallLaunchApp -- Inside First Test Case Block
+	
+	// Set any custom creds here BEFORE HsignOn
+	set global UserID to "fer"
+	set global Password to "fer"
+	HSignOn  -- Inside First Test Case Block
+	
+	//Moxtra from the More menu
+	set global os to "android"
+	set global label_helpTitle to "Help"
+	set global label_helpTopics to "HELP TOPICS"
+	try
+		HAccounts.tapMore
+		HMore.tapHelp
+		HRealTime.setUpRectangleOfSearching
+		wait 2
+		if HRealTime.isChatButtonDisplayed()
+			Log "Chat button was found" 
+			set the SearchRectangle to ()
+		else
+			LogError "Chat button was not found"
+			LogError "Entitlement: Whitelist / FULL - buttons should be visible"
+			set the SearchRectangle to ()
+			throw "Chat button was not found - FAILED" 
+		end if
+		wait 1
+	Catch 
+		LogError "Eggplant was not able to find Chat button"
+		throw "FAILED"
+	End try
+	
+	-- VALIDATE
+	
+	-- CLEAN UP -- Write whatever steps necessary to revert console properties to initial settings if your tests Pass.
+	HUpdateConsole "mbank.realtimechat.feature.enabled","false"
+	HUpdateConsole "fi.com.fismobile.realtimechat_entitlement","disabled"
+	HUpdateConsole.publish
+	HUploadGroovy "defaultdata"
+	HPass -- BeginTestCase and HPass (or HFail) work as a pair so the LAST HPass must be AFTER any Clean up. Otherwise, if clean up fails the run will stop!
+	
+	# END Test Case Block 
+	
+	(* END TEST CASES *)
+	
+catch
+	Log "------------------- FAIL  -------------------"
+	HUpdateConsole "mbank.realtimechat.feature.enabled","false"
+	HUpdateConsole "fi.com.fismobile.realtimechat_entitlement","disabled"
+	HUpdateConsole.publish
+	HUploadGroovy "defaultdata"
+	HFail --  HFail must be AFTER any Clean up
+end try
